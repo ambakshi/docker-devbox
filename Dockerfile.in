@@ -1,0 +1,36 @@
+FROM centos:centos7
+MAINTAINER Amit Bakshi <ambakshi@gmail.com>
+
+RUN rpm -Uvh http://mirror.pnl.gov/epel/7/x86_64/e/epel-release-7-1.noarch.rpm
+RUN yum clean all && yum update -y
+RUN yum install --enablerepo='*' -y vim-enhanced sudo tar coreutils git ctags-etags \
+        expect ruby-devel gcc glibc-devel python-devel java-1.7.0-openjdk-headless
+RUN rpm --nodeps -Uvh http://gii-repo.int.funzio.com/gree-centos-6/x86_64/gii-ec2-tools-1.0-8.x86_64.rpm \
+        http://gii-repo.int.funzio.com/gree-centos-6/x86_64/gree-go-1.3.1-7.el6.x86_64.rpm \
+        http://gii-repo.int.funzio.com/gree-centos-6/noarch/aws-apitools-common-1.1.0-1.8.amzn1.noarch.rpm \
+        http://gii-repo.int.funzio.com/gree-centos-6/noarch/aws-apitools-ec2-1.7.1.0-1.2.amzn1.noarch.rpm \
+        http://gii-repo.int.funzio.com/gree-centos-6/noarch/aws-apitools-as-1.0.61.6-1.0.amzn1.noarch.rpm \
+        http://gii-repo.int.funzio.com/gree-centos-6/noarch/aws-apitools-mon-1.0.20.0-1.0.amzn1.noarch.rpm
+RUN echo "%wheel	ALL=(ALL)	NOPASSWD: ALL" > /etc/sudoers.d/wheel && chmod 0400 /etc/sudoers.d/wheel
+RUN sed -i "s/^%wheel/# %wheel/g" /etc/sudoers
+RUN yum install -y docker screen git-all mercurial
+RUN curl -sSL -O https://get.docker.io/builds/Linux/x86_64/docker-1.2.0 && chmod +x docker-1.2.0 && mv docker-1.2.0 /usr/local/bin/docker
+RUN rpm -Uvh http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm
+RUN yum install -y puppet facter
+
+VOLUME ["/target","/data"]
+
+RUN useradd --create-home --shell /bin/bash --groups wheel --uid 1000 developer
+COPY ./vimrc /home/developer/.vimrc
+COPY ./gitconfig /home/developer/.gitconfig
+RUN chown -R developer:developer /home/developer
+
+USER developer
+ENV HOME /home/developer
+ENV GOPATH /home/developer/go
+WORKDIR /home/developer
+RUN mkdir -p /home/developer/go/src /home/developer/.vim/bundle
+RUN git clone -q https://github.com/gmarik/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+RUN vim ~/.vimrc -c ':PluginInstall' -c ':qa!'
+
+CMD ["/bin/bash","-l"]
