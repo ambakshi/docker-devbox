@@ -1,8 +1,4 @@
 ; vim:set filetype=dosini:
-[user]
-name = Amit Bakshi
-    email = ambakshi@gmail.com
-
 [alias]
     sb = status -sb
     st = status -s
@@ -141,6 +137,6 @@ enabled = 1
 ;[url "file:///home/abakshi/projects/gree/html5-core/.git"]
 ;        insteadOf = "git@git.gree-dev.net:giistudio/html5-core.git"
 
-[hub]
-host = git.gree-dev.net
 
+[include]
+    path = ~/.gitconfig.local

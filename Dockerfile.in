@@ -18,19 +18,36 @@ RUN curl -sSL -O https://get.docker.io/builds/Linux/x86_64/docker-1.2.0 && chmod
 RUN rpm -Uvh http://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm
 RUN yum install -y puppet facter
 
-VOLUME ["/target","/data"]
+## VO//LUME ["/target","/data"]
 
-RUN useradd --create-home --shell /bin/bash --groups wheel --uid 1000 developer
-COPY ./vimrc /home/developer/.vimrc
-COPY ./gitconfig /home/developer/.gitconfig
-RUN chown -R developer:developer /home/developer
+RUN curl -fsSL https://storage.googleapis.com/golang/go1.3.1.linux-amd64.tar.gz | tar zxf - -C /usr/local
 
-USER developer
-ENV HOME /home/developer
-ENV GOPATH /home/developer/go
-WORKDIR /home/developer
-RUN mkdir -p /home/developer/go/src /home/developer/.vim/bundle
-RUN git clone -q https://github.com/gmarik/Vundle.vim.git ~/.vim/bundle/Vundle.vim
-RUN vim ~/.vimrc -c ':PluginInstall' -c ':qa!'
+RUN groupadd -g 1111 staff
+RUN useradd --create-home --shell /bin/bash -g staff -G wheel --uid 1000 dev
 
-CMD ["/bin/bash","-l"]
+ENV HOME /home/dev
+ENV GOPATH /home/dev/go
+ENV PATH /usr/local/go/bin:$PATH
+
+RUN ln -s /usr/share/git-core/contrib/completion/git-prompt.sh /etc/bash_completion.d
+RUN mkdir -p /home/dev/go/src /home/dev/.vim/bundle /home/dev/bin
+RUN git clone -q https://github.com/gmarik/Vundle.vim.git /home/dev/.vim/bundle/Vundle.vim
+
+# Make empty file or it'll be owned by root
+RUN mkdir -p /var/shared/RUN && touch /var/shared/placeholder
+RUN chown -R dev:staff /var/shared
+VOLUME /var/shared
+
+RUN ln -s /var/shared/.ssh /home/dev/.ssh
+RUN ln -s /var/shared/.bash_history /home/dev/.bash_history
+
+RUN echo '[ -n "$PS1" ] && PS1="[\[\033[32m\]\u@\h\[\033[00m\] \[\033[36m\]\W\[\033[31m\]$(__git_ps1)\[\033[00m\]]\n\$ "' >> /home/dev/.bashrc
+ADD .gitconfig.local /home/dev/.gitconfig.local
+ADD gitconfig /home/dev/.gitconfig
+ADD vimrc /home/dev/.vimrc
+#ADD bash_profile /home/dev/.bash_profile
+RUN vim /home/dev/.vimrc -c ':PluginInstall' -c ':qa!'
+
+RUN chown -R dev:staff /home/dev
+WORKDIR /home/dev
+USER dev
